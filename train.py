@@ -41,7 +41,7 @@ def train_one_epoch(model, criterion, optimizer, data_loader, device, epoch):
 
         if i % 50 == 0:
             logging.info(
-                f"Epoch [{epoch}] Iter [{i}/{len(data_loader)}] Loss: {loss_meter.val:.4f} ({loss_meter.avg:.4f}) Acc: {accuracy_meter.val:.4f} ({accuracy_meter.avg:.4f})"
+                f"Epoch [{epoch}] Iter [{i}/{len(data_loader)}] Loss: {loss_meter.avg:.4f} Acc: {accuracy_meter.avg:.4f}"
             )
 
     return loss_meter.avg, accuracy_meter.avg
