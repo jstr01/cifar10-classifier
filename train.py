@@ -68,7 +68,7 @@ def evaluate(model, criterion, data_loader, device):
 
 
 def train_model(
-    model, train_loader, val_loader, criterion, optimizer, device, num_epochs
+    model, train_loader, val_loader, criterion, optimizer, scheduler, device, num_epochs
 ):
     best_accuracy = 0.0
 
@@ -79,6 +79,8 @@ def train_model(
             model, criterion, optimizer, train_loader, device, epoch
         )
         val_loss, val_acc = evaluate(model, criterion, val_loader, device)
+
+        scheduler.step()
 
         # if improved validation accuracy, save & log the model
         if val_acc > best_accuracy:
@@ -127,7 +129,10 @@ def main():
     model.to(device)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = torch.optim.SGD(
+        model.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4
+    )
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
 
     mlflow.set_experiment("cifar10_classification")
 
@@ -144,6 +149,7 @@ def main():
             val_loader,
             criterion,
             optimizer,
+            scheduler,
             device,
             args.epochs,
         )
