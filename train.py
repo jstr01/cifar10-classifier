@@ -114,7 +114,7 @@ def main():
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--lr", type=float, default=0.01)
-    parser.add_argument("--model", type=str, default="mobilenet_v2")
+    parser.add_argument("--model", type=str, default="alexnet")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
@@ -123,7 +123,9 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logging.info(f"Using device: {device}")
 
-    train_loader, val_loader = get_dataloaders(batch_size=args.batch_size)
+    train_loader, val_loader = get_dataloaders(
+        batch_size=args.batch_size, target_size=227 if args.model == "alexnet" else 32
+    )
 
     model = build_model(name=args.model, num_classes=10)
     model.to(device)

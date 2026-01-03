@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from torchvision.models import AlexNet, VGG, mobilenet_v3_small
+from torchvision.models import VGG, mobilenet_v3_small, AlexNet
 
 MODELS = [
     "alexnet",
@@ -8,10 +8,14 @@ MODELS = [
 
 
 def build_model(name: str, num_classes: int = 10) -> nn.Module:
-    if name == "alexnet":
+    if name == "mobilenet_v3_small":
         return mobilenet_v3_small(num_classes=num_classes)
     if name == "mobilenet_v2":
         return MobileNetV2(num_classes=num_classes)
+    if name == "minialexnet":
+        return MiniAlexNet(num_classes=num_classes)
+    if name == "alexnet":
+        return AlexNet(num_classes=num_classes)
     raise ValueError(f"Model {name} not supported. Choose from {MODELS}")
 
 
@@ -121,3 +125,48 @@ def test():
 
 
 # test()
+
+
+class MiniAlexNet(nn.Module):
+    def __init__(self, num_classes=10):
+        super(MiniAlexNet, self).__init__()
+        # conv layer
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 16, kernel_size=7, stride=2, padding=3),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(3, stride=2),
+            nn.Conv2d(16, 32, 5, padding=2),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(3, stride=2),
+            nn.Conv2d(32, 64, 3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, 3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 32, 3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2, stride=2),
+        )
+
+        # Dynamisch die richtige Flatten-Dimension berechnen
+        with torch.no_grad():
+            dummy = torch.zeros(1, 3, 32, 32)
+            out = self.features(dummy)
+            flatten_dim = out.view(1, -1).size(1)
+            print(f">> Flatten Dimension erkannt: {flatten_dim}")
+        # fully connected layer
+        self.classifier = nn.Sequential(
+            nn.Linear(flatten_dim, 256),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.5),
+            nn.Linear(256, 128),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.5),
+            nn.Linear(128, num_classes),
+        )
+
+    # classifier
+    def forward(self, x):
+        x = self.features(x)
+        x = torch.flatten(x, 1)
+        x = self.classifier(x)
+        return x
