@@ -116,16 +116,14 @@ def main():
     parser.add_argument("--lr", type=float, default=0.01)
     parser.add_argument("--model", type=str, default="alexnet")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--mlflow-url", type=str, default="http://localhost:5000")
+    parser.add_argument("--mlflow-url", type=str, default="")
     args = parser.parse_args()
 
     seed_everything(args.seed)
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-    os.environ["MLFLOW_TRACKING_USERNAME"] = "admin"
-
-    mlflow.set_tracking_uri(args.mlflow_url)
-    logging.info(f"MLflow tracking URI set to: {args.mlflow_url}")
+    if args.mlflow_url:
+        mlflow.set_tracking_uri(args.mlflow_url)
+        logging.info(f"MLflow tracking URI set to: {args.mlflow_url}")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logging.info(f"Using device: {device}")
