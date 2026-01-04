@@ -1,6 +1,13 @@
 import torch.nn as nn
 
-from torchvision.models import VGG, mobilenet_v3_small, AlexNet, resnet18, resnet34, vgg16_bn
+from torchvision.models import (
+    mobilenet_v3_small,
+    mobilenet_v3_large,
+    AlexNet,
+    resnet18,
+    resnet34,
+    vgg16_bn,
+)
 
 MODELS = [
     "alexnet",
@@ -10,6 +17,8 @@ MODELS = [
 def build_model(name: str, num_classes: int = 10) -> nn.Module:
     if name == "mobilenet_v3_small":
         return mobilenet_v3_small(num_classes=num_classes)
+    if name == "mobilenet_v3_large":
+        return mobilenet_v3_large(num_classes=num_classes)
     if name == "mobilenet_v2":
         return MobileNetV2(num_classes=num_classes)
     if name == "minialexnet":
