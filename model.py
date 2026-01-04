@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from torchvision.models import VGG, mobilenet_v3_small, AlexNet, resnet18, resnet34
+from torchvision.models import VGG, mobilenet_v3_small, AlexNet, resnet18, resnet34, vgg16_bn
 
 MODELS = [
     "alexnet",
@@ -20,6 +20,8 @@ def build_model(name: str, num_classes: int = 10) -> nn.Module:
         return resnet18(num_classes=num_classes)
     if name == "resnet34":
         return resnet34(num_classes=num_classes)
+    if name == "vgg":
+        return vgg16_bn(num_classes=num_classes)
     raise ValueError(f"Model {name} not supported. Choose from {MODELS}")
 
 
