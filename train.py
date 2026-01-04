@@ -80,7 +80,7 @@ def train_model(
         )
         val_loss, val_acc = evaluate(model, criterion, val_loader, device)
 
-        scheduler.step()
+        scheduler.step(val_loss)
 
         # if improved validation accuracy, save & log the model
         if val_acc > best_accuracy:
