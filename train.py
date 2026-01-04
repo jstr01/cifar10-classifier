@@ -89,8 +89,6 @@ def train_model(
             best_model_path = os.path.join(os.getcwd(), "best_model.pth")
             torch.save(model.state_dict(), best_model_path)
 
-            mlflow.log_artifact(best_model_path, artifact_path="models")
-
         epoch_time = time.time() - start_time
         logging.info(
             f"Epoch [{epoch}] completed in {str(datetime.timedelta(seconds=int(epoch_time)))}"
@@ -165,6 +163,9 @@ def main():
         final_model_path = os.path.join(os.getcwd(), "final_model.pth")
         torch.save(trained_model.state_dict(), final_model_path)
 
+        mlflow.log_artifact(
+            os.path.join(os.getcwd(), "best_model.pth"), artifact_path="models"
+        )
         mlflow.log_artifact(final_model_path, artifact_path="models")
 
 
