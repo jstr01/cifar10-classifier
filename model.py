@@ -231,7 +231,7 @@ class AdvancedCNN(nn.Module):
         self.bn3 = nn.BatchNorm2d(256 * 2)
 
         self.maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.dropout = nn.Dropout2d(0.2)
+        self.dropout = nn.Dropout(0.2)
 
         self.fc1 = nn.Linear(4096 * 2, 4096 * 2)
         self.fc2 = nn.Linear(4096 * 2, 2048 * 2)

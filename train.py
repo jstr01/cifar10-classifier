@@ -137,7 +137,9 @@ def main():
     optimizer = torch.optim.SGD(
         model.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4
     )
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, factor=0.1, patience=10, min_lr=0.00001
+    )
 
     mlflow.set_experiment("cifar10_classification")
 
