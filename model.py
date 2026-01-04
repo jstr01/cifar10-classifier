@@ -148,16 +148,21 @@ class MiniAlexNet(nn.Module):
         # conv layer
         self.features = nn.Sequential(
             nn.Conv2d(3, 16, kernel_size=7, stride=2, padding=3),
+            nn.BatchNorm2d(16),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(3, stride=2),
             nn.Conv2d(16, 32, 5, padding=2),
+            nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(3, stride=2),
             nn.Conv2d(32, 64, 3, padding=1),
+            nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
             nn.Conv2d(64, 64, 3, padding=1),
+            nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
             nn.Conv2d(64, 32, 3, padding=1),
+            nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2, stride=2),
         )
