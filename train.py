@@ -34,9 +34,7 @@ def train_one_epoch(model, criterion, optimizer, data_loader, device, epoch):
         loss.backward()
         optimizer.step()
 
-        accuracy_meter.update(
-            (output.argmax(dim=1) == target).float().mean().item(), n=image.size(0)
-        )
+        accuracy_meter.update((output.argmax(dim=1) == target).float().mean().item(), n=image.size(0))
         loss_meter.update(loss.item(), n=image.size(0))
 
         if i % 50 == 0:
@@ -59,25 +57,19 @@ def evaluate(model, criterion, data_loader, device):
             output = model(image)
             loss = criterion(output, target)
 
-            accuracy_meter.update(
-                (output.argmax(dim=1) == target).float().mean().item(), n=image.size(0)
-            )
+            accuracy_meter.update((output.argmax(dim=1) == target).float().mean().item(), n=image.size(0))
             loss_meter.update(loss.item(), n=image.size(0))
 
     return loss_meter.avg, accuracy_meter.avg
 
 
-def train_model(
-    model, train_loader, val_loader, criterion, optimizer, scheduler, device, num_epochs
-):
+def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler, device, num_epochs):
     best_accuracy = 0.0
 
     for epoch in range(num_epochs):
         start_time = time.time()
 
-        train_loss, train_acc = train_one_epoch(
-            model, criterion, optimizer, train_loader, device, epoch
-        )
+        train_loss, train_acc = train_one_epoch(model, criterion, optimizer, train_loader, device, epoch)
         val_loss, val_acc = evaluate(model, criterion, val_loader, device)
 
         scheduler.step(val_loss)
@@ -134,12 +126,8 @@ def main():
     model.to(device)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(
-        model.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4
-    )
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, factor=0.1, patience=10, min_lr=0.00001
-    )
+    optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.1, patience=10, min_lr=0.00001)
 
     mlflow.set_experiment("cifar10_classification")
 
@@ -165,9 +153,7 @@ def main():
         final_model_path = os.path.join(os.getcwd(), "final_model.pth")
         torch.save(trained_model.state_dict(), final_model_path)
 
-        mlflow.log_artifact(
-            os.path.join(os.getcwd(), "best_model.pth"), artifact_path="models"
-        )
+        mlflow.log_artifact(os.path.join(os.getcwd(), "best_model.pth"), artifact_path="models")
         mlflow.log_artifact(final_model_path, artifact_path="models")
 
 

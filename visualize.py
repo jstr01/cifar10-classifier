@@ -9,9 +9,7 @@ from torch.utils.data import DataLoader
 from model import AdvancedCNN
 
 
-def make_cifar10_data_loader(
-    image_paths: list[str], sample_ids: list[int], batch_size: int = 32
-) -> DataLoader:
+def make_cifar10_data_loader(image_paths: list[str], sample_ids: list[int], batch_size: int = 32) -> DataLoader:
     mean = [0.4914, 0.4822, 0.4465]
     std = [0.2470, 0.2435, 0.2616]
     transforms = torchvision.transforms.Compose(
@@ -20,15 +18,11 @@ def make_cifar10_data_loader(
             torchvision.transforms.Normalize(mean, std),
         ]
     )
-    dataset = TorchImageDataset(
-        image_paths, sample_ids=sample_ids, transform=transforms
-    )
+    dataset = TorchImageDataset(image_paths, sample_ids=sample_ids, transform=transforms)
     return DataLoader(dataset, batch_size=batch_size, num_workers=4)
 
 
-def predict(
-    model: torch.nn.Module, imgs: torch.Tensor
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def predict(model: torch.nn.Module, imgs: torch.Tensor) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     logits = model(imgs).detach().cpu().numpy()
     predictions = np.argmax(logits, axis=1)
     odds = np.exp(logits)

@@ -3,15 +3,11 @@ import torchvision
 import torchvision.transforms as T
 
 
-def get_dataloaders(
-    batch_size: int = 32, num_workers: int = 2, target_size: int = 32
-) -> tuple[DataLoader, DataLoader]:
+def get_dataloaders(batch_size: int = 32, num_workers: int = 2, target_size: int = 32) -> tuple[DataLoader, DataLoader]:
     mean = [0.4914, 0.4822, 0.4465]
     std = [0.2470, 0.2435, 0.2616]
 
-    resize = (
-        T.Resize((target_size, target_size)) if target_size else T.Lambda(lambda x: x)
-    )
+    resize = T.Resize((target_size, target_size)) if target_size else T.Lambda(lambda x: x)
 
     train_transform = T.Compose(
         [
@@ -32,12 +28,8 @@ def get_dataloaders(
         ]
     )
 
-    train_set = torchvision.datasets.CIFAR10(
-        root="./data", train=True, download=True, transform=train_transform
-    )
-    val_set = torchvision.datasets.CIFAR10(
-        root="./data", train=False, download=True, transform=val_transform
-    )
+    train_set = torchvision.datasets.CIFAR10(root="./data", train=True, download=True, transform=train_transform)
+    val_set = torchvision.datasets.CIFAR10(root="./data", train=False, download=True, transform=val_transform)
 
     train_loader = DataLoader(
         train_set,
