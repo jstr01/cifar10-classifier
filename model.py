@@ -223,7 +223,7 @@ class AdvancedAlexNet(nn.Module):
         self.classifier = nn.Sequential(
             nn.Linear(flatten_dim, 8192),
             nn.ReLU(inplace=True),
-            nn.Linear(8129, 4096),
+            nn.Linear(8192, 4096),
             nn.ReLU(inplace=True),
             nn.Dropout(0.2),
             nn.Linear(4096, num_classes),
