@@ -65,11 +65,12 @@ def evaluate(model, criterion, data_loader, device):
 
 def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler, device, num_epochs):
     best_accuracy = 0.0
+    train_one_epoch_compiled = torch.compile(train_one_epoch, mode="reduce-overhead")
 
     for epoch in range(num_epochs):
         start_time = time.time()
 
-        train_loss, train_acc = train_one_epoch(model, criterion, optimizer, train_loader, device, epoch)
+        train_loss, train_acc = train_one_epoch_compiled(model, criterion, optimizer, train_loader, device, epoch)
         val_loss, val_acc = evaluate(model, criterion, val_loader, device)
 
         scheduler.step()
