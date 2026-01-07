@@ -226,7 +226,7 @@ class AdvancedAlexNet(nn.Module):
             nn.Linear(1024, 256),
             nn.ReLU(inplace=True),
             nn.Dropout(0.2),
-            nn.Linear(56, num_classes),
+            nn.Linear(256, num_classes),
         )
         logging.info(f"Feature extractor parameters: {sum(p.numel() for p in self.features.parameters())}")
         logging.info(f"Classifier parameters: {sum(p.numel() for p in self.classifier.parameters())}")
