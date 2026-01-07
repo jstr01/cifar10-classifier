@@ -221,12 +221,12 @@ class AdvancedAlexNet(nn.Module):
             logging.info(f"Flatten dimension: {flatten_dim}")
 
         self.classifier = nn.Sequential(
-            nn.Linear(flatten_dim, 8192),
+            nn.Linear(flatten_dim, 1024),
             nn.ReLU(inplace=True),
-            nn.Linear(8192, 4096),
+            nn.Linear(1024, 256),
             nn.ReLU(inplace=True),
             nn.Dropout(0.2),
-            nn.Linear(4096, num_classes),
+            nn.Linear(56, num_classes),
         )
         logging.info(f"Feature extractor parameters: {sum(p.numel() for p in self.features.parameters())}")
         logging.info(f"Classifier parameters: {sum(p.numel() for p in self.classifier.parameters())}")
