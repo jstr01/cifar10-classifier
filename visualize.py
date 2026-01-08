@@ -1,12 +1,12 @@
 import fiftyone as fo
-from fiftyone.utils.torch import TorchImageDataset
 import fiftyone.zoo as foz
 import numpy as np
 import torch
 import torchvision
+from fiftyone.utils.torch import TorchImageDataset
 from torch.utils.data import DataLoader
 
-from model import AdvancedCNN
+from model import AdvancedAlexNet
 
 
 def make_cifar10_data_loader(image_paths: list[str], sample_ids: list[int], batch_size: int = 32) -> DataLoader:
@@ -32,8 +32,7 @@ def predict(model: torch.nn.Module, imgs: torch.Tensor) -> tuple[np.ndarray, np.
 
 def main():
     # Load model
-    model = AdvancedCNN()
-    model_name = "advanced_cnn_predictions"
+    model = AdvancedAlexNet()
     state_dict = torch.load(
         "mlflow_data/mlartifacts/1/c472357933a34ec780d4a5312d482d06/artifacts/models/best_model.pth",
     )
@@ -56,7 +55,7 @@ def main():
                 sample = dataset[sample_id]
                 if sample.ground_truth.label != classes[prediction]:
                     sample.tags.append("mistake")
-                sample[model_name] = fo.Classification(
+                sample["prediction"] = fo.Classification(
                     label=classes[prediction],
                     logits=logits,
                     confidence=float(probabilities[prediction]),

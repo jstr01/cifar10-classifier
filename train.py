@@ -1,30 +1,33 @@
+import argparse
 import datetime
 import logging
-import os
 import time
-
-import torch
-import torch.utils.data
-from utils import AverageMeter
-from torch import nn
-
-import argparse
-from dataloader import get_dataloaders
-from model import build_model
-from utils import seed_everything
+from pathlib import Path
 
 import mlflow
+import torch
+import torch.utils.data
+from torch import nn
+
+from dataloader import get_dataloaders
+from model import AdvancedAlexNet, MiniAlexNet
+from utils import AverageMeter, seed_everything
 
 logging.basicConfig(level=logging.INFO)
 
+CLASSES = ("plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck")
 
-def train_one_epoch(model, criterion, optimizer, data_loader, device, epoch):
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+logging.info(f"Using device: {DEVICE}")
+
+
+def train_one_epoch(model, criterion, optimizer, data_loader, epoch):
     model.train()
     accuracy_meter = AverageMeter()
     loss_meter = AverageMeter()
 
     for i, (image, target) in enumerate(data_loader):
-        image, target = image.to(device), target.to(device)
+        image, target = image.to(DEVICE), target.to(DEVICE)
 
         output = model(image)
         loss = criterion(output, target)
@@ -45,14 +48,14 @@ def train_one_epoch(model, criterion, optimizer, data_loader, device, epoch):
     return loss_meter.avg, accuracy_meter.avg
 
 
-def evaluate(model, criterion, data_loader, device):
+def evaluate(model, criterion, data_loader):
     model.eval()
     accuracy_meter = AverageMeter()
     loss_meter = AverageMeter()
 
     with torch.no_grad():
         for image, target in data_loader:
-            image, target = image.to(device), target.to(device)
+            image, target = image.to(DEVICE), target.to(DEVICE)
 
             output = model(image)
             loss = criterion(output, target)
@@ -63,22 +66,21 @@ def evaluate(model, criterion, data_loader, device):
     return loss_meter.avg, accuracy_meter.avg
 
 
-def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler, device, num_epochs):
+def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler, num_epochs):
     best_accuracy = 0.0
+    best_model_path = Path.cwd() / "best_model.pth"
+    last_model_path = Path.cwd() / "final_model.pth"
 
     for epoch in range(num_epochs):
         start_time = time.time()
 
-        train_loss, train_acc = train_one_epoch(model, criterion, optimizer, train_loader, device, epoch)
-        val_loss, val_acc = evaluate(model, criterion, val_loader, device)
+        train_loss, train_acc = train_one_epoch(model, criterion, optimizer, train_loader, epoch)
+        val_loss, val_acc = evaluate(model, criterion, val_loader)
 
         scheduler.step()
 
-        # if improved validation accuracy, save & log the model
         if val_acc > best_accuracy:
             best_accuracy = val_acc
-            # save best model locally and log as artifact
-            best_model_path = os.path.join(os.getcwd(), "best_model.pth")
             torch.save(model.state_dict(), best_model_path)
 
         epoch_time = time.time() - start_time
@@ -96,7 +98,55 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler
         mlflow.log_metric("best_val_acc", best_accuracy, step=epoch)
         mlflow.log_metric("epoch_time_sec", epoch_time, step=epoch)
 
+    torch.save(model.state_dict(), last_model_path)
+
+    # log models to mlflow
+    mlflow.log_artifact(str(best_model_path), artifact_path="models")
+    mlflow.log_artifact(str(last_model_path), artifact_path="models")
+
+    # return best model
+    model.load_state_dict(torch.load(best_model_path))
     return model
+
+
+def final_report(model, val_loader):
+    """confusion matrix and classification report"""
+    import numpy as np
+    from sklearn.metrics import (ConfusionMatrixDisplay, classification_report,
+                                 confusion_matrix)
+
+    # Make predictions on test set
+    model.eval()
+    predictions = []
+    labels = []
+    with torch.no_grad():
+        for images, targets in val_loader:
+            images, targets = images.to(DEVICE), targets.to(DEVICE)
+            outputs = model(images)
+            prediction = outputs.argmax(dim=1)
+            predictions.extend(prediction.cpu().numpy())
+            labels.extend(targets.cpu().numpy())
+    predictions = np.array(predictions)
+    labels = np.array(labels)
+
+    # Create and log confusion matrix
+    cm = confusion_matrix(labels, predictions)
+    cm_display = ConfusionMatrixDisplay(cm, display_labels=CLASSES)
+    cm_display.plot(cmap="Blues")
+    cm_figure_path = Path.cwd() / "confusion_matrix.png"
+    cm_display.figure_.savefig(cm_figure_path)
+    mlflow.log_artifact(str(cm_figure_path), artifact_path="reports")
+
+    # Create and log classification report
+    cr = classification_report(labels, predictions, target_names=CLASSES)
+    cr_figure_path = Path.cwd() / "classification_report.txt"
+    with open(cr_figure_path, "w") as f:
+        f.write(cr)
+    mlflow.log_artifact(str(cr_figure_path), artifact_path="reports")
+
+    # Log to console
+    logging.info("Confusion Matrix:\n" + str(cm))
+    logging.info("Classification Report:\n" + str(cr))
 
 
 def main():
@@ -115,15 +165,18 @@ def main():
         mlflow.set_tracking_uri(args.mlflow_url)
         logging.info(f"MLflow tracking URI set to: {args.mlflow_url}")
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    logging.info(f"Using device: {device}")
+    train_loader, val_loader = get_dataloaders(batch_size=args.batch_size)
 
-    train_loader, val_loader = get_dataloaders(
-        batch_size=args.batch_size, target_size=227 if args.model == "alexnet" else 32
-    )
-
-    model = build_model(name=args.model, num_classes=10)
-    model.to(device)
+    # Initialize model
+    model = None
+    match args.model:
+        case "minialexnet":
+            model = MiniAlexNet(num_classes=10)
+        case "advancedalexnet":
+            model = AdvancedAlexNet(num_classes=10)
+        case _:
+            raise ValueError(f"Unknown model name: {args.model}")
+    model.to(DEVICE)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
@@ -145,16 +198,10 @@ def main():
             criterion,
             optimizer,
             scheduler,
-            device,
             args.epochs,
         )
 
-        # save final model artifact
-        final_model_path = os.path.join(os.getcwd(), "final_model.pth")
-        torch.save(trained_model.state_dict(), final_model_path)
-
-        mlflow.log_artifact(os.path.join(os.getcwd(), "best_model.pth"), artifact_path="models")
-        mlflow.log_artifact(final_model_path, artifact_path="models")
+        final_report(trained_model, val_loader)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
-from torch.utils.data import DataLoader
 import torchvision
 import torchvision.transforms as T
+from torch.utils.data import DataLoader
 
 
 def get_dataloaders(batch_size: int = 32, num_workers: int = 2, target_size: int = 32) -> tuple[DataLoader, DataLoader]:
