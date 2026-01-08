@@ -1,25 +1,33 @@
+import argparse
+from pathlib import Path
+
 import fiftyone as fo
-import fiftyone.zoo as foz
 import numpy as np
 import torch
 import torchvision
-from fiftyone.utils.torch import TorchImageDataset
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from model import AdvancedAlexNet
 
 
-def make_cifar10_data_loader(image_paths: list[str], sample_ids: list[int], batch_size: int = 32) -> DataLoader:
-    mean = [0.4914, 0.4822, 0.4465]
-    std = [0.2470, 0.2435, 0.2616]
+CIFAR10_MEAN = [0.4914, 0.4822, 0.4465]
+CIFAR10_STD = [0.2470, 0.2435, 0.2616]
+CLASSES = ("plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck")
+
+IMAGE_PATH = Path.cwd() / "data" / "cifar10_images"
+IMAGE_PATH.mkdir(parents=True, exist_ok=True)
+
+
+def make_cifar10_data_loader(batch_size: int = 32) -> DataLoader:
     transforms = torchvision.transforms.Compose(
         [
             torchvision.transforms.ToTensor(),
-            torchvision.transforms.Normalize(mean, std),
+            torchvision.transforms.Normalize(CIFAR10_MEAN, CIFAR10_STD),
         ]
     )
-    dataset = TorchImageDataset(image_paths, sample_ids=sample_ids, transform=transforms)
-    return DataLoader(dataset, batch_size=batch_size, num_workers=4)
+    dataset = torchvision.datasets.CIFAR10(root="./data", train=False, download=True, transform=transforms)
+    return DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
 
 def predict(model: torch.nn.Module, imgs: torch.Tensor) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -31,39 +39,49 @@ def predict(model: torch.nn.Module, imgs: torch.Tensor) -> tuple[np.ndarray, np.
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model_path", type=str, help="Path to the trained model file", default="best_model.pth")
+    args = parser.parse_args()
+
     # Load model
     model = AdvancedAlexNet()
-    state_dict = torch.load(
-        "mlflow_data/mlartifacts/1/c472357933a34ec780d4a5312d482d06/artifacts/models/best_model.pth",
-    )
+    state_dict = torch.load(args.model_path)
     model.load_state_dict(state_dict)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
     model.eval()
 
-    # Load CIFAR-10 test dataset
-    dataset = foz.load_zoo_dataset("cifar10", split="test")
-    classes = dataset.default_classes
-    image_paths, sample_ids = zip(*[(s.filepath, s.id) for s in dataset.iter_samples()])
-    data_loader = make_cifar10_data_loader(image_paths, sample_ids, 16)
+    data_loader = make_cifar10_data_loader()
 
-    # Make predictions
-    with fo.ProgressBar() as pb:
-        for imgs, sample_ids in pb(data_loader):
-            predictions, probabilities, logits_ = predict(model, imgs.to(device))
-            for sample_id, prediction, logits in zip(sample_ids, predictions, logits_):
-                sample = dataset[sample_id]
-                if sample.ground_truth.label != classes[prediction]:
-                    sample.tags.append("mistake")
-                sample["prediction"] = fo.Classification(
-                    label=classes[prediction],
-                    logits=logits,
-                    confidence=float(probabilities[prediction]),
-                )
-                sample.save()
+    samples = []
+    for imgs, targets in tqdm(data_loader, desc="Predicting"):
+        # Make predictions
+        predictions, probabilities, logits_ = predict(model, imgs.to(device))
+        for image, prediction, probability, target in zip(imgs, predictions, probabilities, targets):
+            # Denormalize and save image
+            torchvision.utils.save_image(
+                image * torch.tensor(CIFAR10_STD).reshape(3, 1, 1) + torch.tensor(CIFAR10_MEAN).reshape(3, 1, 1),
+                IMAGE_PATH / f"{len(samples)}.png",
+            )
 
+            # Create FiftyOne sample
+            sample = fo.Sample(
+                filepath=str(IMAGE_PATH / f"{len(samples)}.png"),
+                ground_truth=fo.Classification(label=CLASSES[target]),
+                prediction=fo.Classification(label=CLASSES[prediction], confidence=float(probability)),
+            )
+
+            # Tag misclassified samples
+            if prediction != target:
+                sample["prediction"].tags.append("misclassified")
+                sample.tags.append("misclassified")
+            samples.append(sample)
+
+    # Create FiftyOne dataset and launch app
+    dataset = fo.Dataset(name="cifar10_predictions", overwrite=True)
+    dataset.add_samples(samples)
     session = fo.launch_app(dataset)
-    session.wait()
+    session.wait()  # Keep the app running
 
 
 if __name__ == "__main__":
