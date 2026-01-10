@@ -1,12 +1,12 @@
 import logging
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class MiniAlexNet(nn.Module):
     def __init__(self, num_classes=10):
-        super(MiniAlexNet, self).__init__()
+        super().__init__()
         # conv layer
         self.features = nn.Sequential(
             nn.Conv2d(3, 16, kernel_size=7, stride=2, padding=3),
@@ -56,7 +56,7 @@ class MiniAlexNet(nn.Module):
 
 class AdvancedAlexNet(nn.Module):
     def __init__(self, num_classes=10):
-        super(AdvancedAlexNet, self).__init__()
+        super().__init__()
         self.features = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(64),
@@ -90,7 +90,7 @@ class AdvancedAlexNet(nn.Module):
             dummy = torch.zeros(1, 3, 32, 32)
             out = self.features(dummy)
             flatten_dim = out.view(1, -1).size(1)
-            logging.info(f"Flatten dimension: {flatten_dim}")
+            logging.info("Flatten dimension: %d", flatten_dim)
 
         self.classifier = nn.Sequential(
             nn.Linear(flatten_dim, 1024),
@@ -100,9 +100,9 @@ class AdvancedAlexNet(nn.Module):
             nn.Dropout(0.2),
             nn.Linear(256, num_classes),
         )
-        logging.info(f"Feature extractor parameters: {sum(p.numel() for p in self.features.parameters())}")
-        logging.info(f"Classifier parameters: {sum(p.numel() for p in self.classifier.parameters())}")
-        logging.info(f"Total parameters: {sum(p.numel() for p in self.parameters())}")
+        logging.info("Feature extractor parameters: %d", sum(p.numel() for p in self.features.parameters()))
+        logging.info("Classifier parameters: %d", sum(p.numel() for p in self.classifier.parameters()))
+        logging.info("Total parameters: %d", sum(p.numel() for p in self.parameters()))
 
     def forward(self, x):
         x = self.features(x)

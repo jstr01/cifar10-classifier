@@ -8,7 +8,8 @@ import mlflow
 import numpy as np
 import torch
 import torch.utils.data
-from sklearn.metrics import ConfusionMatrixDisplay, classification_report, confusion_matrix
+from sklearn.metrics import (ConfusionMatrixDisplay, classification_report,
+                             confusion_matrix)
 from torch import nn
 
 from dataloader import get_dataloaders
@@ -20,7 +21,7 @@ logging.basicConfig(level=logging.INFO)
 CLASSES = ("plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck")
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-logging.info(f"Using device: {DEVICE}")
+logging.info("Using device: %s", DEVICE)
 
 
 def train_one_epoch(model, criterion, optimizer, data_loader, epoch):
@@ -44,7 +45,12 @@ def train_one_epoch(model, criterion, optimizer, data_loader, epoch):
 
         if i % 50 == 0:
             logging.info(
-                f"Epoch [{epoch}] Iter [{i}/{len(data_loader)}] Loss: {loss_meter.avg:.4f} Acc: {accuracy_meter.avg:.4f}"
+                "Epoch [%d] Iter [%d/%d] Loss: %.4f Acc: %.4f",
+                epoch,
+                i,
+                len(data_loader),
+                loss_meter.avg,
+                accuracy_meter.avg,
             )
 
     return loss_meter.avg, accuracy_meter.avg
@@ -140,13 +146,13 @@ def final_report(model, val_loader):
     # Create and log classification report
     cr = classification_report(labels, predictions, target_names=CLASSES)
     cr_figure_path = Path.cwd() / "classification_report.txt"
-    with open(cr_figure_path, "w") as f:
+    with open(cr_figure_path, "w", encoding="utf-8") as f:
         f.write(cr)
     mlflow.log_artifact(str(cr_figure_path), artifact_path="reports")
 
     # Log to console
-    logging.info("Confusion Matrix:\n" + str(cm))
-    logging.info("Classification Report:\n" + str(cr))
+    logging.info("Confusion Matrix:\n %s", cm)
+    logging.info("Classification Report:\n %s", cr)
 
 
 def main():
@@ -165,7 +171,7 @@ def main():
 
     if args.mlflow_url:
         mlflow.set_tracking_uri(args.mlflow_url)
-        logging.info(f"MLflow tracking URI set to: {args.mlflow_url}")
+        logging.info("MLflow tracking URI set to: %s", args.mlflow_url)
 
     train_loader, val_loader = get_dataloaders(batch_size=args.batch_size, augment=not args.disable_augmentation)
 
