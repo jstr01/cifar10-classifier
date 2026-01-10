@@ -8,8 +8,25 @@ wheels/
 .idea/
 .code/
 
-data/
-runs/
+/data/
+/mlruns/
+/mlflow_data/
+/temp_images/
+
+*.pth
+*.db
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fls
+*.log
+*.nav
+*.out
+*.run.xml
+*.toc
+*.synctex.gz
+*.snm
 
 # Virtual environments
 .venv
