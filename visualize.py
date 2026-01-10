@@ -10,7 +10,6 @@ from tqdm import tqdm
 
 from model import AdvancedAlexNet
 
-
 CIFAR10_MEAN = [0.4914, 0.4822, 0.4465]
 CIFAR10_STD = [0.2470, 0.2435, 0.2616]
 CLASSES = ("plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck")
@@ -30,12 +29,8 @@ def make_cifar10_data_loader(batch_size: int = 32) -> DataLoader:
     return DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
 
-def predict(model: torch.nn.Module, imgs: torch.Tensor) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    logits = model(imgs).detach().cpu().numpy()
-    predictions = np.argmax(logits, axis=1)
-    odds = np.exp(logits)
-    confidences = np.max(odds, axis=1) / np.sum(odds, axis=1)
-    return predictions, confidences, logits
+def predict(model: torch.nn.Module, imgs: torch.Tensor) -> np.ndarray:
+    return np.argmax(model(imgs).detach().cpu().numpy(), axis=1)
 
 
 def main():
@@ -56,8 +51,8 @@ def main():
     samples = []
     for imgs, targets in tqdm(data_loader, desc="Predicting"):
         # Make predictions
-        predictions, probabilities, logits_ = predict(model, imgs.to(device))
-        for image, prediction, probability, target in zip(imgs, predictions, probabilities, targets):
+        predictions = predict(model, imgs.to(device))
+        for image, prediction, target in zip(imgs, predictions, targets):
             # Denormalize and save image
             torchvision.utils.save_image(
                 image * torch.tensor(CIFAR10_STD).reshape(3, 1, 1) + torch.tensor(CIFAR10_MEAN).reshape(3, 1, 1),
@@ -68,7 +63,7 @@ def main():
             sample = fo.Sample(
                 filepath=str(IMAGE_PATH / f"{len(samples)}.png"),
                 ground_truth=fo.Classification(label=CLASSES[target]),
-                prediction=fo.Classification(label=CLASSES[prediction], confidence=float(probability)),
+                prediction=fo.Classification(label=CLASSES[prediction]),
             )
 
             # Tag misclassified samples
