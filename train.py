@@ -79,7 +79,8 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler
         train_loss, train_acc = train_one_epoch(model, criterion, optimizer, train_loader, epoch)
         val_loss, val_acc = evaluate(model, criterion, val_loader)
 
-        scheduler.step()
+        if scheduler is not None:
+            scheduler.step()
 
         if val_acc > best_accuracy:
             best_accuracy = val_acc
@@ -156,6 +157,7 @@ def main():
     parser.add_argument("--model", type=str, default="advancedalexnet")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--mlflow-url", type=str, default="")
+    parser.add_argument("--disable-lr-scheduler", action="store_true")
     args = parser.parse_args()
 
     seed_everything(args.seed)
@@ -179,7 +181,14 @@ def main():
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+    if args.disable_lr_scheduler:
+        logging.info("Learning rate scheduler is disabled.")
+        scheduler = None
+    else:
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer,
+            T_max=args.epochs,
+        )
 
     mlflow.set_experiment("cifar10_classification")
 
