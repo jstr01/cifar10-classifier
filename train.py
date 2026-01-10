@@ -158,6 +158,7 @@ def main():
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--mlflow-url", type=str, default="")
     parser.add_argument("--disable-lr-scheduler", action="store_true")
+    parser.add_argument("--disable-augmentation", action="store_true")
     args = parser.parse_args()
 
     seed_everything(args.seed)
@@ -166,7 +167,7 @@ def main():
         mlflow.set_tracking_uri(args.mlflow_url)
         logging.info(f"MLflow tracking URI set to: {args.mlflow_url}")
 
-    train_loader, val_loader = get_dataloaders(batch_size=args.batch_size)
+    train_loader, val_loader = get_dataloaders(batch_size=args.batch_size, augment=not args.disable_augmentation)
 
     # Initialize model
     model = None

@@ -3,15 +3,23 @@ import torchvision.transforms as T
 from torch.utils.data import DataLoader
 
 
-def get_dataloaders(batch_size: int = 32, num_workers: int = 2) -> tuple[DataLoader, DataLoader]:
+def get_dataloaders(batch_size: int = 32, num_workers: int = 2, augment: bool = True) -> tuple[DataLoader, DataLoader]:
     mean = [0.4914, 0.4822, 0.4465]
     std = [0.2470, 0.2435, 0.2616]
 
-    train_transform = T.Compose(
+    augmentations = (
         [
             T.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1),
             T.RandomPerspective(distortion_scale=0.5, p=0.5),
             T.RandomHorizontalFlip(),
+        ]
+        if augment
+        else []
+    )
+
+    train_transform = T.Compose(
+        [
+            *augmentations,
             T.ToTensor(),
             T.Normalize(mean, std),
         ]
