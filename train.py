@@ -154,7 +154,7 @@ def main():
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--lr", type=float, default=0.01)
-    parser.add_argument("--model", type=str, default="alexnet")
+    parser.add_argument("--model", type=str, default="advancedalexnet")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--mlflow-url", type=str, default="")
     args = parser.parse_args()
