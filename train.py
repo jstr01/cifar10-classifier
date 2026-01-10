@@ -5,8 +5,10 @@ import time
 from pathlib import Path
 
 import mlflow
+import numpy as np
 import torch
 import torch.utils.data
+from sklearn.metrics import ConfusionMatrixDisplay, classification_report, confusion_matrix
 from torch import nn
 
 from dataloader import get_dataloaders
@@ -111,9 +113,6 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler
 
 def final_report(model, val_loader):
     """confusion matrix and classification report"""
-    import numpy as np
-    from sklearn.metrics import (ConfusionMatrixDisplay, classification_report,
-                                 confusion_matrix)
 
     # Make predictions on test set
     model.eval()
