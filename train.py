@@ -8,8 +8,7 @@ import mlflow
 import numpy as np
 import torch
 import torch.utils.data
-from sklearn.metrics import (ConfusionMatrixDisplay, classification_report,
-                             confusion_matrix)
+from sklearn.metrics import ConfusionMatrixDisplay, classification_report, confusion_matrix
 from torch import nn
 
 from dataloader import get_dataloaders
@@ -24,7 +23,13 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 logging.info("Using device: %s", DEVICE)
 
 
-def train_one_epoch(model, criterion, optimizer, data_loader, epoch):
+def train_one_epoch(
+    model: nn.Module,
+    criterion: nn.Module,
+    optimizer: torch.optim.Optimizer,
+    data_loader: torch.utils.data.DataLoader,
+    epoch: int,
+) -> tuple[float, float]:
     model.train()
     accuracy_meter = AverageMeter()
     loss_meter = AverageMeter()
@@ -56,7 +61,7 @@ def train_one_epoch(model, criterion, optimizer, data_loader, epoch):
     return loss_meter.avg, accuracy_meter.avg
 
 
-def evaluate(model, criterion, data_loader):
+def evaluate(model: nn.Module, criterion: nn.Module, data_loader: torch.utils.data.DataLoader) -> tuple[float, float]:
     model.eval()
     accuracy_meter = AverageMeter()
     loss_meter = AverageMeter()
@@ -74,7 +79,15 @@ def evaluate(model, criterion, data_loader):
     return loss_meter.avg, accuracy_meter.avg
 
 
-def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler, num_epochs):
+def train_model(
+    model: nn.Module,
+    train_loader: torch.utils.data.DataLoader,
+    val_loader: torch.utils.data.DataLoader,
+    criterion: nn.Module,
+    optimizer: torch.optim.Optimizer,
+    scheduler: torch.optim.lr_scheduler.LRScheduler | None,
+    num_epochs: int,
+) -> nn.Module:
     best_accuracy = 0.0
     best_model_path = Path.cwd() / "best_model.pth"
     last_model_path = Path.cwd() / "final_model.pth"
@@ -118,7 +131,7 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler
     return model
 
 
-def final_report(model, val_loader):
+def final_report(model: nn.Module, val_loader: torch.utils.data.DataLoader) -> None:
     """confusion matrix and classification report"""
 
     # Make predictions on test set
@@ -155,7 +168,7 @@ def final_report(model, val_loader):
     logging.info("Classification Report:\n %s", cr)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--batch-size", type=int, default=128)
